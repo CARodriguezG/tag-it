@@ -27,17 +27,18 @@ function setup() {
 function draw() {
     background(220);
 
-    // Movimiento con teclas WASD
+    // Actualizar mi jugador (movimiento local)
     if (players[me]) {
         let speed = 3;
         let p = players[me];
 
+        // Movimiento por teclas WASD
         if (keyIsDown(65)) p.x -= speed; // A
         if (keyIsDown(68)) p.x += speed; // D
         if (keyIsDown(87)) p.y -= speed; // W
         if (keyIsDown(83)) p.y += speed; // S
 
-        // Movimiento táctil por arrastre
+        // Movimiento táctil
         if (dragActive) {
             p.x += dragDir.x * dragSpeed;
             p.y += dragDir.y * dragSpeed;
@@ -47,26 +48,20 @@ function draw() {
         p.x = constrain(p.x, PLAYER_SIZE / 2, WIDTH - PLAYER_SIZE / 2);
         p.y = constrain(p.y, PLAYER_SIZE / 2, HEIGHT - PLAYER_SIZE / 2);
 
+        // Enviar posición al servidor
         socket.emit('move', { x: p.x, y: p.y });
     }
 
-    // Dibujar jugadores y puntajes
+    // Dibujar todos los jugadores
     for (let id in players) {
-        let p = players[id];
-        fill(p.isTag ? 'red' : 'blue');
-        ellipse(p.x, p.y, PLAYER_SIZE, PLAYER_SIZE);
+        // Para mi jugador, usar posición local (más precisa y fluida)
+        let p = id === me ? players[me] : players[id];
+        let isLocal = id === me;
 
-        fill(0);
-        textAlign(CENTER);
-        textSize(10);
-        text(id === me ? 'Tú' : id.slice(0, 4), p.x, p.y - PLAYER_SIZE / 1.5);
-
-        textSize(12);
-        fill(50, 100, 200);
-        text(`Toques: ${p.score || 0}`, p.x, p.y + PLAYER_SIZE);
+        drawPlayer(p, id, isLocal);
     }
 
-    // Si soy la mancha, verificar colisiones para pasar la mancha
+    // Si soy la mancha, verificar colisiones
     if (players[me]?.isTag) {
         for (let id in players) {
             if (id !== me) {
@@ -74,7 +69,6 @@ function draw() {
                 let b = players[id];
                 let d = dist(a.x, a.y, b.x, b.y);
                 if (d < PLAYER_SIZE) {
-                    // Calcular vector de empuje (normalizado)
                     let dx = b.x - a.x;
                     let dy = b.y - a.y;
                     let distNorm = dist(0, 0, dx, dy);
@@ -89,6 +83,21 @@ function draw() {
         }
     }
 }
+
+function drawPlayer(p, id, isLocal) {
+    fill(p.isTag ? 'red' : 'blue');
+    ellipse(p.x, p.y, PLAYER_SIZE, PLAYER_SIZE);
+
+    fill(0);
+    textAlign(CENTER);
+    textSize(10);
+    text(id === me ? 'Tú' : id.slice(0, 4), p.x, p.y - PLAYER_SIZE / 1.5);
+
+    textSize(12);
+    fill(50, 100, 200);
+    text(`Toques: ${p.score || 0}`, p.x, p.y + PLAYER_SIZE);
+}
+
 
 // Control táctil por arrastre
 
